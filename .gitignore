@@ -1,0 +1,5 @@
+*.swp
+*.swo
+*.log
+.idea
+/task-tool-cli
