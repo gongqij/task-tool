@@ -87,8 +87,13 @@ func main() {
 					Name:  "object_type,o",
 					Usage: "optional, -object_type xxx -o xxx get tasks by objectType",
 				},
+				cli.BoolFlag{
+					Name:  "all,a",
+					Usage: "optional, -all get all tasks",
+				},
 			},
 			Action: func(c *cli.Context) error {
+				flagNumVerify(c)
 				if c.String("task_id") != "" {
 					err := mgr.GetTaskInfoById(c.String("task_id"))
 					if err != nil {
@@ -96,11 +101,22 @@ func main() {
 					}
 					return nil
 				}
-				resp, err := mgr.ListAllTasks()
-				if err != nil {
-					return err
+				if c.String("object_type") != "" {
+					resp, err := mgr.ListAllTasks()
+					if err != nil {
+						return err
+					}
+					printResult(resp, c.String("object_type"))
+					return nil
 				}
-				printResult(resp, c.String("object_type"))
+				if c.Bool("all") == true {
+					resp, err := mgr.ListAllTasks()
+					if err != nil {
+						return err
+					}
+					printResult(resp, "")
+					return nil
+				}
 				return nil
 			},
 		},
@@ -150,14 +166,12 @@ func main() {
 					Usage: "optional, -object_type xxx -o xxx delete tasks by objectType",
 				},
 				cli.BoolFlag{
-					Name:  "all",
+					Name:  "all,a",
 					Usage: "optional, -all delete tasks by objectType",
 				},
 			},
 			Action: func(c *cli.Context) error {
-				if c.NumFlags() >= 2 {
-					logrus.Fatalf("too many flags")
-				}
+				flagNumVerify(c)
 				if c.String("task_id") != "" {
 					err := mgr.DeleteTaskById(c.String("task_id"))
 					if err != nil {
@@ -283,5 +297,21 @@ func printResult(resp *client.TaskInfoResp, objectType string) {
 		for _, v := range v {
 			fmt.Printf("%s\t%s\t%s\n", v.taskID, v.status, v.sourceAddress)
 		}
+	}
+}
+
+func flagNumVerify(c *cli.Context) {
+	flagNum := 0
+	if c.String("task_id") != "" {
+		flagNum++
+	}
+	if c.String("object_type") != "" {
+		flagNum++
+	}
+	if c.Bool("all") == true {
+		flagNum++
+	}
+	if flagNum != 1 {
+		logrus.Fatal("请指定一个参数：(-task_id、-t)或(-object_type、-o)或(-all,-a)")
 	}
 }
